@@ -333,6 +333,36 @@ table.orders th { background: #0f0c08; color: var(--gold2); }
 footer.site { border-top: 2px solid var(--border); padding: 24px 16px; text-align: center; color: var(--muted); font-size: 14px; }
 footer.site a { color: var(--gold2); }
 
+/* Homepage extras (tabs, banner, crates, vote) */
+.about p { max-width: 760px; margin: 0 auto 10px; text-align: center; color: var(--muted); font-size: 16px; }
+.tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+.tab-btn {
+  background: var(--card); color: var(--muted); border: 2px solid var(--border); border-radius: 10px;
+  padding: 10px 22px; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.tab-btn.active { background: var(--gold); color: #1a1206; border-color: var(--gold); }
+.tab-panel { display: none; max-width: 560px; margin: 0 auto; }
+.tab-panel.active { display: block; }
+.tab-panel .card { text-align: center; }
+.tab-panel code { font-size: 18px; color: var(--gold2); font-weight: 700; }
+.feature-icon { font-size: 34px; display: block; margin-bottom: 6px; }
+.banner-nodiscord {
+  max-width: 860px; margin: 0 auto 18px; text-align: center;
+  background: linear-gradient(90deg, #3a2a10, #57400f, #3a2a10);
+  border: 2px solid var(--gold); border-radius: 12px; padding: 14px 18px;
+  color: var(--gold2); font-size: 18px; font-weight: 800;
+}
+.banner-nodiscord small { display: block; color: var(--text); font-weight: 400; font-size: 14px; margin-top: 2px; }
+.crate-card { text-align: center; position: relative; }
+.crate-card .crate-icon { font-size: 44px; display: block; margin-bottom: 6px; }
+.badge-preview {
+  position: absolute; top: -10px; right: 12px; background: #8fa8ff; color: #10182e;
+  font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.vote-grid { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.center-note { text-align: center; color: var(--muted); }
+
 </style>
 </head>
 <body>
@@ -367,8 +397,8 @@ function homePage() {
 
   const body = `
 <section class="hero">
-  <h1>SUNMC</h1>
-  <p class="sub">Survival SMP · Java + Bedrock crossplay</p>
+  <h1>SUN MC</h1>
+  <p class="sub">Survival SMP · Java + Bedrock crossplay — one world, every device!</p>
   <div class="ipbox">
     <code id="ip">${SERVER_IP}</code>
     <span class="port">Bedrock port: ${BEDROCK_PORT}</span>
@@ -378,46 +408,57 @@ function homePage() {
     <a class="btn" href="#ranks">Buy a Rank</a>
     <a class="btn ghost" href="${DISCORD_INVITE}" target="_blank" rel="noopener">Join Discord</a>
   </div>
-  <script>
-    function copyIp(btn){navigator.clipboard.writeText('${SERVER_IP}').then(function(){btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy IP';},1500);});}
-  </script>
 </section>
 
 <section class="block" id="join">
   <div class="wrap">
-    <h2>HOW TO JOIN</h2>
-    <div class="cards">
+    <h2>How to Join</h2>
+    <div class="tabs">
+      <button class="tab-btn active" type="button" onclick="showTab('bedrock', this)">📱 Bedrock</button>
+      <button class="tab-btn" type="button" onclick="showTab('java', this)">🖥 Java</button>
+    </div>
+    <div class="tab-panel active" id="tab-bedrock">
       <div class="card">
-        <h3>🖥 Java Edition</h3>
+        <h3>📱 Bedrock (Phone / Console / Tablet)</h3>
         <ol>
-          <li>Open Minecraft → Multiplayer → Add Server</li>
-          <li>Server address: <b>${SERVER_IP}</b></li>
-          <li>Done — join and play!</li>
+          <li>Open Minecraft → Play → Servers → Add Server</li>
+          <li>Server Address: <code>${SERVER_IP}</code></li>
+          <li>Port: <code>${BEDROCK_PORT}</code></li>
+          <li>Save and join — bas, khel shuru!</li>
         </ol>
       </div>
+    </div>
+    <div class="tab-panel" id="tab-java">
       <div class="card">
-        <h3>📱 Bedrock (Phone / Console)</h3>
+        <h3>🖥 Java Edition (PC)</h3>
         <ol>
-          <li>Open Minecraft → Servers → Add Server</li>
-          <li>Address: <b>${SERVER_IP}</b></li>
-          <li>Port: <b>${BEDROCK_PORT}</b></li>
-          <li>Save and join!</li>
+          <li>Open Minecraft → Multiplayer → Add Server</li>
+          <li>Server Address: <code>${SERVER_IP}</code></li>
+          <li>Done — join and play!</li>
         </ol>
       </div>
     </div>
   </div>
 </section>
 
-<section class="block">
+<section class="block about" id="about">
+  <div class="wrap">
+    <h2>ABOUT SUN MC</h2>
+    <p>Sun MC ek friendly Survival SMP hai jahan Java aur Bedrock players ek hi world me saath khelte hain — phone ho ya PC, sab welcome hain!</p>
+    <p>Build karo, explore karo, shops chalao, events me hissa lo aur doston ke saath apni survival journey shuru karo. Staff active hai aur community roz badh rahi hai.</p>
+  </div>
+</section>
+
+<section class="block" id="features">
   <div class="wrap">
     <h2>FEATURES</h2>
     <div class="cards">
-      <div class="card"><h3>🌐 Crossplay</h3><p>Java and Bedrock players play together on one server via Geyser.</p></div>
-      <div class="card"><h3>⚔️ Survival SMP</h3><p>Classic survival with an active community and regular events.</p></div>
-      <div class="card"><h3>🎁 Ranks &amp; Kits</h3><p>Buy a rank and claim its kit in-game with <code>/kit</code>.</p></div>
-      <div class="card"><h3>🛒 Shops &amp; Auction House</h3><p>Player shops, an auction house and a thriving in-game economy.</p></div>
-      <div class="card"><h3>🌀 RTP &amp; Leaderboards</h3><p>Random teleport to the wild and compete on the leaderboards.</p></div>
-      <div class="card"><h3>💬 Active Community</h3><p>Friendly staff and players on our Discord server.</p></div>
+      <div class="card"><span class="feature-icon">🌐</span><h3>Crossplay</h3><p>Java aur Bedrock — dono ek hi server par, koi rukawat nahi.</p></div>
+      <div class="card"><span class="feature-icon">⚔️</span><h3>Survival</h3><p>Classic survival SMP — build, mine, explore aur survive karo.</p></div>
+      <div class="card"><span class="feature-icon">🎁</span><h3>Kits</h3><p>Har rank ke saath uska khaas kit, in-game <code>/kit</code> se claim karo.</p></div>
+      <div class="card"><span class="feature-icon">📦</span><h3>Crates</h3><p>Vote, Rare aur Legendary crates se jeeto dhamakedaar rewards.</p></div>
+      <div class="card"><span class="feature-icon">💬</span><h3>Community</h3><p>Friendly players aur helpful staff — Discord par humesha koi milega.</p></div>
+      <div class="card"><span class="feature-icon">🎉</span><h3>Events</h3><p>Regular events, giveaways aur tournaments pure saal bhar.</p></div>
     </div>
   </div>
 </section>
@@ -425,16 +466,71 @@ function homePage() {
 <section class="block" id="ranks">
   <div class="wrap">
     <h2>RANKS &amp; KITS</h2>
-    <p style="text-align:center;color:var(--muted)">Buying a rank gives you its kit too — no Discord needed, buy right here on the website!</p>
+    <div class="banner-nodiscord">🎉 No Discord needed!
+      <small>Rank kharidne ke liye Discord join karna zaroori NAHI hai — isi website se buy karo, pay karo, bas!</small>
+    </div>
+    <p class="center-note">Rank kharidne se uska <b>kit bhi milta hai</b> — game me <code>/kit</code> command se claim kar lena.</p>
     <div class="cards">${rankCards}</div>
+  </div>
+</section>
+
+<section class="block" id="crates">
+  <div class="wrap">
+    <h2>CRATES</h2>
+    <p class="center-note">Crates jald aa rahe hain — yeh sirf ek preview hai!</p>
+    <div class="cards">
+      <div class="card crate-card">
+        <span class="badge-preview">Preview</span>
+        <span class="crate-icon">🗳️</span>
+        <h3>Vote Crate</h3>
+        <p>Har vote par ek key — roz vote karo, roz rewards kholo!</p>
+        <a class="btn ghost" href="${DISCORD_INVITE}" target="_blank" rel="noopener">Get keys on Discord</a>
+      </div>
+      <div class="card crate-card">
+        <span class="badge-preview">Preview</span>
+        <span class="crate-icon">💎</span>
+        <h3>Rare Crate</h3>
+        <p>Rare gear, tools aur khaas items jeetne ka mauka.</p>
+        <a class="btn ghost" href="${DISCORD_INVITE}" target="_blank" rel="noopener">Get keys on Discord</a>
+      </div>
+      <div class="card crate-card">
+        <span class="badge-preview">Preview</span>
+        <span class="crate-icon">👑</span>
+        <h3>Legendary Crate</h3>
+        <p>Sabse bade rewards — legendary loot ke liye taiyaar raho!</p>
+        <a class="btn ghost" href="${DISCORD_INVITE}" target="_blank" rel="noopener">Get keys on Discord</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="vote">
+  <div class="wrap">
+    <h2>VOTE FOR SUN MC</h2>
+    <p class="center-note">Vote karo aur in-game rewards pao — har vote server ko aage badhata hai! 🗳️</p>
+    <div class="vote-grid">
+      <a class="btn ghost" href="#" rel="noopener">Vote — Site 1</a>
+      <a class="btn ghost" href="#" rel="noopener">Vote — Site 2</a>
+      <a class="btn ghost" href="#" rel="noopener">Vote — Site 3</a>
+    </div>
   </div>
 </section>
 
 <section class="discord">
   <h2>JOIN OUR DISCORD</h2>
-  <p style="color:#c9d4f5">Announcements, support and community chat.</p>
-  <a class="btn" href="${DISCORD_INVITE}" target="_blank" rel="noopener">discord.gg — Join Sunmc</a>
-</section>`;
+  <p style="color:#c9d4f5">Announcements, support, giveaways aur community chat — sab kuch ek jagah!</p>
+  <a class="btn" href="${DISCORD_INVITE}" target="_blank" rel="noopener">Join the Sun MC Discord</a>
+</section>
+<script>
+  function copyIp(btn){navigator.clipboard.writeText('${SERVER_IP}').then(function(){btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy IP';},1500);});}
+  function showTab(name, btn){
+    document.getElementById('tab-bedrock').classList.toggle('active', name === 'bedrock');
+    document.getElementById('tab-java').classList.toggle('active', name === 'java');
+    var btns = document.querySelectorAll('.tab-btn');
+    for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+    btn.classList.add('active');
+  }
+</script>`;
   return layout('Sunmc — Survival SMP', body);
 }
 
