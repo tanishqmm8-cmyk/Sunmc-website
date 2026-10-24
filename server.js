@@ -1335,6 +1335,252 @@ section { padding: 48px 0; }
       tabBedrock.addEventListener("click", function () { selectTab("bedrock"); });
       tabJava.addEventListener("click", function () { selectTab("java"); });
     </script>
+    <!-- ============================================================
+     SUNMC CHATBOT — paste this WHOLE block once, just before
+     </body> at the end of homePage() in server.js (around line 1337).
+     Self-contained: styles + widget + FAQ engine. No other changes.
+     ============================================================ -->
+<style>
+  #sunmc-chat-btn{position:fixed;right:18px;bottom:18px;z-index:9999;width:58px;height:58px;border-radius:50%;border:3px solid #2c5f2d;background:linear-gradient(145deg,#7dd956,#4c9a3f);font-size:28px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.45);transition:transform .15s}
+  #sunmc-chat-btn:hover{transform:scale(1.1)}
+  #sunmc-chat-panel{position:fixed;right:18px;bottom:88px;z-index:9999;width:330px;max-width:92vw;height:460px;max-height:62vh;background:#161d18;border:2px solid #2c5f2d;border-radius:14px;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.55);font-family:Rubik,system-ui,sans-serif}
+  #sunmc-chat-panel.open{display:flex}
+  #sunmc-chat-head{background:linear-gradient(145deg,#2c5f2d,#1e4220);color:#eaffea;padding:10px 14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;font-size:15px}
+  #sunmc-chat-head button{background:none;border:none;color:#eaffea;font-size:18px;cursor:pointer}
+  #sunmc-chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .scm{max-width:85%;padding:8px 11px;border-radius:12px;font-size:13.5px;line-height:1.45;word-wrap:break-word}
+  .scm.bot{background:#232d24;color:#e8f5e9;align-self:flex-start;border-bottom-left-radius:3px}
+  .scm.bot a{color:#9be15d}
+  .scm.user{background:#4c9a3f;color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+  .scm.typing{opacity:.6}
+  #sunmc-chat-chips{display:flex;gap:6px;padding:0 10px 8px;flex-wrap:wrap}
+  #sunmc-chat-chips button{background:#232d24;color:#9be15d;border:1px solid #2c5f2d;border-radius:20px;padding:5px 10px;font-size:12px;cursor:pointer}
+  #sunmc-chat-chips button:hover{background:#2c5f2d;color:#fff}
+  #sunmc-chat-form{display:flex;border-top:1px solid #2c5f2d}
+  #sunmc-chat-input{flex:1;background:#10150f;color:#e8f5e9;border:none;padding:11px 12px;font-size:13.5px;outline:none}
+  #sunmc-chat-form button{background:#4c9a3f;color:#fff;border:none;padding:0 16px;font-size:16px;cursor:pointer}
+</style>
+<div id="sunmc-chat-panel" role="dialog" aria-label="Sunmc Helper chat">
+  <div id="sunmc-chat-head"><span>⛏️ Sunmc Helper</span><button id="sunmc-chat-close" aria-label="Close">✕</button></div>
+  <div id="sunmc-chat-msgs"></div>
+  <div id="sunmc-chat-chips">
+    <button data-q="Rank prices kya hain?">💰 Prices</button>
+    <button data-q="Server ka IP batao">🎮 Server IP</button>
+    <button data-q="Rank kaise kharidu?">🛒 Kaise kharidu?</button>
+    <button data-q="Discord link do">💬 Discord</button>
+  </div>
+  <form id="sunmc-chat-form"><input id="sunmc-chat-input" type="text" placeholder="Kuch poochho… (jaise: Warden kitna ka hai?)" autocomplete="off" /><button type="submit" aria-label="Send">➤</button></form>
+</div>
+<button id="sunmc-chat-btn" aria-label="Chat with Sunmc Helper">⛏️</button>
+<script>
+/* ===== Sunmc chatbot FAQ engine (v1) ===== */
+(function (global) {
+  'use strict';
+
+  var DISCORD = 'https://discord.gg/T64jYftQJE';
+  var SERVER_IP = 'play.sunmc.bond';
+  var BEDROCK_PORT = '19133';
+  var UPI_ID = '9005102544@ptyes';
+
+  var FAQS = [
+    {
+      k: ['price', 'prices', 'cost', 'kitna', 'daam', 'rate', 'rates', 'paisa', 'rank list', 'ranks'],
+      a: 'Yeh rahe saare ranks + kits:<br>🏆 <b>MVP</b> — ₹39<br>⭐ <b>VIP</b> — ₹79<br>🌌 <b>Void</b> — ₹129<br>🕶️ <b>Gangster</b> — ₹159<br>🔱 <b>Warden</b> — ₹199 (top tier 👑)<br><br>Rank = uska kit bhi saath me, /kit se claim karo!'
+    },
+    {
+      k: ['store', 'webshop', 'shop', 'announcement', 'live hai'],
+      a: '🎮 <b>SunMC Store officially LIVE hai!</b> 🚀<br>Rank kharidna bohot easy hai — website pe jao, scan karo, aur apna rank pao!<br><br>🔗 <b>Webshop:</b> <a href="https://sunmc-website.onrender.com/" target="_blank" rel="noopener">sunmc-website.onrender.com</a><br><br>👑 <b>Ranks (Lifetime Access):</b><br>🔱 <b>WARDEN</b> — ₹199 (Ultimate Animated RGB Tag)<br>🕶️ <b>GANGSTER</b> — ₹159 (RGB Tag + OP Kits)<br>🌌 <b>VOID</b> — ₹129 (Animated Tag + Netherite Kit)<br>⭐ <b>VIP</b> — ₹79 (OP Items Kit)<br>🏆 <b>MVP</b> — ₹39 (Chat Tag + Basic Kit)<br><br>Koi dikkat aaye toh Discord pe support ticket khol lena! 🎮'
+    },
+    {
+      k: ['mvp'],
+      a: '🏆 <b>MVP</b> — ₹39. <b>Perks:</b> Chat Tag + Basic Kit. Rank + MVP kit (in-game <b>/kit</b> se claim karo). Shuruaat ke liye best value!'
+    },
+    {
+      k: ['vip'],
+      a: '⭐ <b>VIP</b> — ₹79. <b>Perks:</b> OP Items Kit. Rank + VIP kit (in-game <b>/kit</b> se claim karo).'
+    },
+    {
+      k: ['void'],
+      a: '🌌 <b>Void</b> — ₹129. <b>Perks:</b> Animated Tag + Netherite Kit. Rank + Void kit (in-game <b>/kit</b> se claim karo).'
+    },
+    {
+      k: ['gangster'],
+      a: '🕶️ <b>Gangster</b> — ₹159. <b>Perks:</b> RGB Tag + OP Kits. Rank + Gangster kit (in-game <b>/kit</b> se claim karo).'
+    },
+    {
+      k: ['warden'],
+      a: '🔱 <b>Warden</b> — ₹199, sabse top tier 👑. <b>Perks:</b> Ultimate Animated RGB Tag. Rank + Warden kit (in-game <b>/kit</b> se claim karo).'
+    },
+    {
+      k: ['buy', 'kharid', 'kharidu', 'purchase', 'order', 'kaise', 'how to', 'payment karna', 'pay karna'],
+      a: 'Rank kharidna super easy hai:<br>1️⃣ Rank pe <b>Buy Now</b> dabao<br>2️⃣ Apna <b>in-game name</b> + email likho<br>3️⃣ UPI se pay karo (QR scan karo)<br>4️⃣ <b>Payment ka screenshot</b> upload karo<br><br>Discord account ki zaroorat nahi — sab yahin website pe hota hai! ✅'
+    },
+    {
+      k: ['upi', 'qr', 'gpay', 'phonepe', 'paytm', 'scan', 'payment', 'pay'],
+      a: 'UPI ID: <b>' + UPI_ID + '</b><br>GPay / PhonePe / Paytm — kisi bhi UPI app se QR scan karke pay karo, phir screenshot upload karna mat bhoolna! 📸'
+    },
+    {
+      k: ['screenshot', 'proof'],
+      a: 'Payment ke baad <b>screenshot upload karna zaroori hai</b> (PNG/JPG, max 8 MB). Bina screenshot ke hum payment verify nahi kar payenge — toh upload karna mat bhoolna! 📸'
+    },
+    {
+      k: ['deliver', 'delivery', 'kab milega', 'kitna time', 'activate', 'kab lagega', 'verify'],
+      a: 'Tumhara rank <b>payment verify hone ke baad</b> activate hoga — usually <b>a few hours</b> ke andar. ⏳ Team pehle payment check karti hai, phir tumhare in-game name pe rank lagta hai. Confirmation email pe bhi aayega! 📧'
+    },
+    {
+      k: ['kit', '/kit', 'claim'],
+      a: 'Rank milne ke baad server pe join karo aur chat me <b>/kit</b> likho — apne rank ka kit select karo, gear seedha inventory me! 🎒<br>Kit me kya-kya hai, woh in-game kit menu me listed hai.'
+    },
+    {
+      k: ['ip', 'address', 'server ip', 'join', 'connect', 'khelna', 'port'],
+      a: '🎮 <b>Server IP:</b> <b>' + SERVER_IP + '</b><br>📱 <b>Bedrock port:</b> <b>' + BEDROCK_PORT + '</b> (Java pe port ki zaroorat nahi)<br><br>Java + Bedrock dono se khel sakte ho — crossplay server hai! Neeche join guide me step-by-step hai. ⛏️'
+    },
+    {
+      k: ['bedrock', 'mobile', 'phone', 'mcpe', 'android', 'join'],
+      a: '📱 <b>Bedrock / Mobile se join:</b><br>Minecraft me Servers → Add Server →<br>Address: <b>' + SERVER_IP + '</b><br>Port: <b>' + BEDROCK_PORT + '</b><br><br>Save karke join dabao — milte hain game me! ⛏️'
+    },
+    {
+      k: ['java', 'pc', 'computer', 'laptop', 'tlauncher', 'join'],
+      a: '💻 <b>Java / PC se join:</b><br>Multiplayer → Add Server →<br>Server Address: <b>' + SERVER_IP + '</b><br>(Java me port likhne ki zaroorat nahi)<br><br>Done → Join Server! ⛏️'
+    },
+    {
+      k: ['crossplay', 'dono', 'saath'],
+      a: 'Haan! 🤝 Sunmc <b>crossplay</b> hai — Java (PC) aur Bedrock (mobile/console) wale <b>ek hi server</b> pe saath khelte hain.'
+    },
+    {
+      k: ['gamemode', 'survival', 'smp', 'mode', 'kya hai ye server'],
+      a: '🌍 Sunmc ek <b>Survival SMP</b> server hai — Java + Bedrock crossplay. Survival khelo, ranks lo, crates kholo, community ke saath maze karo! ⛏️'
+    },
+    {
+      k: ['discord'],
+      a: '💬 Hamara Discord: <b><a href="' + DISCORD + '" target="_blank" rel="noopener">discord.gg/T64jYftQJE</a></b><br>Announcements, events aur community — sab wahan milta hai!'
+    },
+    {
+      k: ['crate', 'key', 'keys'],
+      a: '🗳️ <b>Crates:</b> Crate key lo, spawn ke crates area me jao, aur gear/cash/rare loot ke liye roll karo!<br><b>Vote Crate</b> bilkul free hai — vote karke key kamao. Baaki crates ki final list jald aa rahi hai, Discord pe nazar rakho! 👀'
+    },
+    {
+      k: ['problem', 'nahi ho raha', 'error', 'fail', 'join nahi', 'connect nahi', 'kaam nahi', 'issue', 'stuck'],
+      a: '😟 Join nahi ho raha? Yeh check karo:<br>1️⃣ IP bilkul sahi likha? <b>' + SERVER_IP + '</b><br>2️⃣ Bedrock pe port <b>' + BEDROCK_PORT + '</b> dala?<br>3️⃣ Net chal raha hai?<br><br>Phir bhi na ho toh <b><a href="' + DISCORD + '" target="_blank" rel="noopener">Discord</a></b> pe team ko batao — hum help karenge! 💪'
+    },
+    {
+      k: ['refund', 'paise wapas', 'return'],
+      a: 'Refund ke liye <b><a href="' + DISCORD + '" target="_blank" rel="noopener">Discord</a></b> pe team se baat karo — woh tumhara case dekh ke help karenge. 💬'
+    },
+    {
+      k: ['owner', 'admin', 'contact', 'baat karni', 'help chahiye', 'support'],
+      a: 'Team se baat karni hai? <b><a href="' + DISCORD + '" target="_blank" rel="noopener">Discord</a></b> pe aao — wahan admins active rehte hain! 💬'
+    },
+    {
+      k: ['free', 'muft', 'bina paise'],
+      a: 'Server pe khelna <b>bilkul free</b> hai! 🎉 Ranks sirf extra perks + kits ke liye hain. Aur <b>Vote Crate</b> se free me bhi loot kama sakte ho — vote karo, key pao! 🗳️'
+    },
+    {
+      k: ['namaste', 'hello', 'hi', 'hey', 'salam', 'ram ram'],
+      a: 'Namaste! 🙏 Main Sunmc Helper hoon. Ranks, price, server IP, ya kaise join karein — kuch bhi poochho! ⛏️'
+    },
+    {
+      k: ['thank', 'shukriya', 'dhanyavad', 'thanks'],
+      a: 'Koi baat nahi! 😊 Game me milte hain — IP yaad hai na? <b>' + SERVER_IP + '</b> ⛏️'
+    },
+    {
+      k: ['bye', 'alvida', 'see you'],
+      a: 'Bye bye! 👋 Game me milte hain! ⛏️'
+    }
+  ];
+
+  var FALLBACKS = [
+    'Hmm, yeh samajh nahi aaya 🤔 — thoda aur simple shabdon me poochho? Ya <b><a href="' + DISCORD + '" target="_blank" rel="noopener">Discord</a></b> pe team se poochh lo, woh turant jawab denge! 💬',
+    'Iska jawab mere paas nahi hai 😅 — lekin <b><a href="' + DISCORD + '" target="_blank" rel="noopener">Discord</a></b> pe poochho, team wahan active hai! 💬'
+  ];
+
+  function normalize(s) {
+    return ' ' + String(s || '').toLowerCase().replace(/[^a-z0-9₹\/ ]/g, ' ').replace(/ +/g, ' ') + ' ';
+  }
+
+  function keyMatches(paddedQuery, key) {
+    return paddedQuery.indexOf(' ' + key + ' ') !== -1;
+  }
+
+  function answer(query) {
+    var q = normalize(query);
+    var best = null, bestScore = 0;
+    for (var i = 0; i < FAQS.length; i++) {
+      var score = 0;
+      var keys = FAQS[i].k;
+      for (var j = 0; j < keys.length; j++) {
+        if (keyMatches(q, keys[j])) score++;
+      }
+      if (score > bestScore) { bestScore = score; best = FAQS[i]; }
+    }
+    if (best && bestScore > 0) return best.a;
+    return FALLBACKS[query.length % FALLBACKS.length];
+  }
+
+  var BOT = { answer: answer, faqCount: FAQS.length };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = BOT;
+  global.SunmcBot = BOT;
+})(typeof window !== 'undefined' ? window : global);
+
+/* ===== widget wiring ===== */
+(function () {
+  var panel = document.getElementById('sunmc-chat-panel');
+  var btn = document.getElementById('sunmc-chat-btn');
+  var msgs = document.getElementById('sunmc-chat-msgs');
+  var form = document.getElementById('sunmc-chat-form');
+  var input = document.getElementById('sunmc-chat-input');
+  var closeBtn = document.getElementById('sunmc-chat-close');
+  var greeted = false;
+
+  function addMsg(text, who) {
+    var d = document.createElement('div');
+    d.className = 'scm ' + who;
+    d.innerHTML = text;
+    msgs.appendChild(d);
+    msgs.scrollTop = msgs.scrollHeight;
+    return d;
+  }
+  function botReply(q) {
+    var t = addMsg('…', 'bot typing');
+    setTimeout(function () {
+      t.classList.remove('typing');
+      t.innerHTML = (window.SunmcBot ? SunmcBot.answer(q) : 'Abhi thoda rest kar raha hoon 😅 — <b><a href="https://discord.gg/T64jYftQJE" target="_blank" rel="noopener">Discord</a></b> pe poochh lo!');
+      msgs.scrollTop = msgs.scrollHeight;
+    }, 550);
+  }
+  function toggle(open) {
+    var willOpen = typeof open === 'boolean' ? open : !panel.classList.contains('open');
+    panel.classList.toggle('open', willOpen);
+    if (willOpen && !greeted) {
+      greeted = true;
+      setTimeout(function () {
+        addMsg('Namaste! 🙏 Main <b>Sunmc Helper</b> hoon.<br>Ranks, price, server IP, join guide — kuch bhi poochho! ⛏️', 'bot');
+      }, 300);
+    }
+    if (willOpen) setTimeout(function () { input.focus(); }, 350);
+  }
+  btn.addEventListener('click', function () { toggle(); });
+  closeBtn.addEventListener('click', function () { toggle(false); });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var q = input.value.trim();
+    if (!q) return;
+    addMsg(q.replace(/</g, '&lt;'), 'user');
+    input.value = '';
+    botReply(q);
+  });
+  document.querySelectorAll('#sunmc-chat-chips button').forEach(function (c) {
+    c.addEventListener('click', function () {
+      var q = c.getAttribute('data-q');
+      if (!panel.classList.contains('open')) toggle(true);
+      addMsg(q.replace(/</g, '&lt;'), 'user');
+      botReply(q);
+    });
+  });
+})();
+</script>
+<!-- ===== /SUNMC CHATBOT ===== -->
   </body>
 </html>`;
 }
